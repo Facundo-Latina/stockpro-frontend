@@ -1,0 +1,181 @@
+/* ===================== SHARED ===================== */
+.section-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+/* ===================== ABOUT ===================== */
+.about-hero { text-align: center; padding: 60px 0 48px; }
+
+.about-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  background: var(--accent-dim);
+  border: 1px solid rgba(99,210,255,0.2);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.about-title {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin-bottom: 16px;
+}
+
+.about-desc {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  max-width: 560px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+
+/* Mission */
+.about-mission {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 56px;
+}
+
+.about-mission-card { padding: 32px; text-align: center; }
+
+.about-mission-icon { font-size: 2rem; margin-bottom: 14px; }
+
+.about-mission-card h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+
+.about-mission-card p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.75; }
+
+/* Values */
+.about-values { margin-bottom: 56px; }
+
+.about-values-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.about-value-card { padding: 28px; }
+.about-value-icon { font-size: 1.8rem; margin-bottom: 14px; }
+.about-value-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+.about-value-card p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.65; }
+
+/* Team */
+.about-team { margin-bottom: 56px; }
+
+.about-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.about-team-card { padding: 28px; text-align: center; }
+
+.about-team-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #070b14;
+  margin: 0 auto 14px;
+  font-family: 'Syne', sans-serif;
+}
+
+.about-team-name { font-size: 0.975rem; font-weight: 700; margin-bottom: 8px; }
+.about-team-desc { font-size: 0.82rem; color: var(--text-muted); margin-top: 8px; line-height: 1.6; }
+
+/* Stack */
+.about-stack { margin-bottom: 56px; }
+
+/* ===================== CONTACT ===================== */
+.contact-hero { text-align: center; padding: 60px 0 48px; }
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  margin-bottom: 60px;
+  align-items: start;
+}
+
+.contact-info { display: flex; flex-direction: column; gap: 12px; }
+
+.contact-info-card {
+  padding: 18px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.contact-info-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 2px; }
+
+.contact-info-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.contact-info-value { font-size: 0.875rem; color: var(--text-secondary); }
+
+/* ===================== 404 ===================== */
+.notfound-page {
+  min-height: calc(100vh - 62px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.notfound-card {
+  text-align: center;
+  padding: 60px 48px;
+  max-width: 460px;
+  width: 100%;
+}
+
+.notfound-code {
+  font-size: 7rem;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+  font-family: 'Syne', sans-serif;
+}
+
+.notfound-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; }
+.notfound-desc { color: var(--text-muted); margin-bottom: 32px; line-height: 1.7; }
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 768px) {
+  .about-mission { grid-template-columns: 1fr; }
+  .contact-grid { grid-template-columns: 1fr; }
+  .notfound-code { font-size: 5rem; }
+  .notfound-card { padding: 40px 24px; }
+}

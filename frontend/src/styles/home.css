@@ -1,0 +1,118 @@
+.home-hero {
+  padding: 80px 0 60px;
+  text-align: center;
+}
+
+.home-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--accent-dim);
+  border: 1px solid rgba(99,210,255,0.2);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  margin-bottom: 28px;
+  text-transform: uppercase;
+}
+
+.home-title {
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  margin-bottom: 20px;
+}
+
+.home-title-gradient {
+  background: linear-gradient(135deg, var(--accent), #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.home-desc {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  max-width: 520px;
+  margin: 0 auto 40px;
+  line-height: 1.8;
+}
+
+.home-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+/* Stats */
+.home-stats { padding: 0 0 56px; }
+.home-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+
+/* Features */
+.home-features { padding: 0 0 72px; }
+
+.home-features-title {
+  text-align: center;
+  font-size: 1.9rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.home-features-subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  margin-bottom: 40px;
+  font-size: 0.95rem;
+}
+
+.home-features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; }
+
+.feature-card { padding: 28px; transition: var(--transition); }
+.feature-card:hover { background: var(--bg-card-hover); transform: translateY(-2px); }
+
+.feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  margin-bottom: 16px;
+}
+
+.feature-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+.feature-desc { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.65; }
+
+/* Testimonials */
+.home-testimonials { padding: 0 0 72px; }
+
+.home-testimonials-title {
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-bottom: 32px;
+}
+
+.testimonials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+
+.testimonial-card { padding: 28px; }
+.testimonial-text { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.75; margin-bottom: 20px; font-style: italic; }
+.testimonial-author { display: flex; align-items: center; gap: 12px; }
+.testimonial-name { font-weight: 600; font-size: 0.875rem; }
+.testimonial-role { font-size: 0.78rem; color: var(--text-muted); }
+
+/* CTA Banner */
+.home-cta-banner {
+  padding: 0 0 80px;
+}
+
+.cta-banner {
+  padding: 48px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(99,210,255,0.06), rgba(183,148,244,0.06));
+  border: 1px solid rgba(99,210,255,0.15);
+}
+
+.cta-banner h2 { font-size: 1.75rem; font-weight: 800; margin-bottom: 12px; }
+.cta-banner p { color: var(--text-secondary); margin-bottom: 28px; font-size: 0.95rem; }
