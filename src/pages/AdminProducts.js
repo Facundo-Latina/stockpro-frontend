@@ -1,26 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { getProducts, getCategories, createProduct, updateProduct, deleteProduct } from '../services/api';
+import useDebounce from '../hooks/useDebounce';
 
-const emptyForm = { nombre: '', descripcion: '', stock: '', precio: '', categoria: '', stockMinimo: 5 };
+const EMPTY = { nombre: '', descripcion: '', stock: '', precio: '', categoria: '', stockMinimo: 5 };
 
 function ProductModal({ product, categories, onClose, onSaved }) {
   const [form, setForm] = useState(product ? {
     nombre: product.nombre, descripcion: product.descripcion || '',
     stock: product.stock, precio: product.precio || '',
-    categoria: product.categoria?._id || '', stockMinimo: product.stockMinimo || 5,
-  } : emptyForm);
+    categoria: product.categoria?._id || '', stockMinimo: product.stockMinimo ?? 5,
+  } : EMPTY);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
     const e = {};
-    if (!form.nombre.trim()) e.nombre = 'El nombre es requerido';
-    if (form.stock === '' || form.stock < 0) e.stock = 'El stock debe ser ≥ 0';
+    if (!form.nombre.trim()) e.nombre = 'Requerido';
+    if (form.stock === '' || Number(form.stock) < 0) e.stock = 'Debe ser >= 0';
     return e;
   };
 
-  const handleSubmit = async (e) => {
+  const handle = async (e) => {
     e.preventDefault();
     const e2 = validate();
     if (Object.keys(e2).length) { setErrors(e2); return; }
@@ -36,59 +37,48 @@ function ProductModal({ product, categories, onClose, onSaved }) {
     } finally { setLoading(false); }
   };
 
+  const set = (k) => (ev) => setForm({ ...form, [k]: ev.target.value });
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
-        <h2>{product ? 'Editar Producto' : 'Nuevo Producto'}</h2>
-        <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+    <div className="overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
+        <h2>{product ? 'Editar producto' : 'Nuevo producto'}</h2>
+        <form onSubmit={handle}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 14px' }}>
+            <div className="field" style={{ gridColumn: '1/-1' }}>
               <label>Nombre *</label>
-              <input type="text" placeholder="Nombre del producto" value={form.nombre}
-                onChange={e => setForm({ ...form, nombre: e.target.value })}
-                className={errors.nombre ? 'input-error' : ''} />
-              {errors.nombre && <span className="error-msg">{errors.nombre}</span>}
+              <input type="text" placeholder="Nombre del producto" value={form.nombre} onChange={set('nombre')} className={errors.nombre ? 'field-err' : ''} />
+              {errors.nombre && <span className="err-msg">{errors.nombre}</span>}
             </div>
-
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+            <div className="field" style={{ gridColumn: '1/-1' }}>
               <label>Descripción</label>
-              <textarea placeholder="Descripción opcional..." value={form.descripcion}
-                onChange={e => setForm({ ...form, descripcion: e.target.value })} />
+              <textarea placeholder="Opcional..." value={form.descripcion} onChange={set('descripcion')} style={{ minHeight: 64 }} />
             </div>
-
-            <div className="form-group">
+            <div className="field">
               <label>Stock *</label>
-              <input type="number" min="0" placeholder="0" value={form.stock}
-                onChange={e => setForm({ ...form, stock: e.target.value })}
-                className={errors.stock ? 'input-error' : ''} />
-              {errors.stock && <span className="error-msg">{errors.stock}</span>}
+              <input type="number" min="0" placeholder="0" value={form.stock} onChange={set('stock')} className={errors.stock ? 'field-err' : ''} />
+              {errors.stock && <span className="err-msg">{errors.stock}</span>}
             </div>
-
-            <div className="form-group">
+            <div className="field">
               <label>Stock mínimo</label>
-              <input type="number" min="0" placeholder="5" value={form.stockMinimo}
-                onChange={e => setForm({ ...form, stockMinimo: e.target.value })} />
+              <input type="number" min="0" placeholder="5" value={form.stockMinimo} onChange={set('stockMinimo')} />
             </div>
-
-            <div className="form-group">
+            <div className="field">
               <label>Precio ($)</label>
-              <input type="number" min="0" placeholder="0" value={form.precio}
-                onChange={e => setForm({ ...form, precio: e.target.value })} />
+              <input type="number" min="0" placeholder="0" value={form.precio} onChange={set('precio')} />
             </div>
-
-            <div className="form-group">
+            <div className="field">
               <label>Categoría</label>
-              <select value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })}>
+              <select value={form.categoria} onChange={set('categoria')}>
                 <option value="">Sin categoría</option>
                 {categories.map(c => <option key={c._id} value={c._id}>{c.nombre}</option>)}
               </select>
             </div>
           </div>
-
-          <div className="modal-actions">
+          <div className="modal-footer">
             <button type="button" className="btn btn-glass" onClick={onClose}>Cancelar</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Guardando...' : product ? 'Actualizar' : 'Crear Producto'}
+              {loading ? 'Guardando...' : product ? 'Actualizar' : 'Crear producto'}
             </button>
           </div>
         </form>
@@ -97,34 +87,49 @@ function ProductModal({ product, categories, onClose, onSaved }) {
   );
 }
 
+const stockColor = (p) => {
+  if (p.stock === 0) return 'var(--err)';
+  if (p.stock <= p.stockMinimo) return 'var(--warn)';
+  return 'var(--a3)';
+};
+
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [busqueda, setBusqueda] = useState('');
-  const [categoriaFiltro, setCategoriaFiltro] = useState('');
+  const [search, setSearch] = useState('');
+  const [cat, setCat] = useState('');
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const dSearch = useDebounce(search, 380);
 
-  const fetchAll = async () => {
-    try {
-      const params = { soloActivos: 'false' };
-      if (busqueda) params.busqueda = busqueda;
-      if (categoriaFiltro) params.categoria = categoriaFiltro;
-      const [pRes, cRes] = await Promise.all([getProducts(params), getCategories()]);
-      setProducts(pRes.data.products);
-      setCategories(cRes.data.categories);
-    } catch { toast.error('Error al cargar datos'); }
-    finally { setLoading(false); }
-  };
+  const fetchAll = useCallback(() => {
+    setLoading(true);
+    const params = { soloActivos: 'false', page, limit: 15 };
+    if (dSearch) params.busqueda = dSearch;
+    if (cat) params.categoria = cat;
+    Promise.all([getProducts(params), getCategories()])
+      .then(([p, c]) => {
+        setProducts(p.data.products);
+        setPages(p.data.pages);
+        setTotal(p.data.total);
+        setCategories(c.data.categories);
+      })
+      .catch(() => toast.error('Error al cargar datos'))
+      .finally(() => setLoading(false));
+  }, [dSearch, cat, page]);
 
-  useEffect(() => { const t = setTimeout(fetchAll, 300); return () => clearTimeout(t); }, [busqueda, categoriaFiltro]);
+  useEffect(() => { setPage(1); }, [dSearch, cat]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('¿Eliminar este producto?')) return;
     try {
       await deleteProduct(id);
-      setProducts(products.map(p => p._id === id ? { ...p, activo: false } : p));
+      setProducts(prev => prev.map(p => p._id === id ? { ...p, activo: false } : p));
       toast.success('Producto eliminado');
     } catch { toast.error('Error al eliminar'); }
   };
@@ -136,89 +141,81 @@ export default function AdminProducts() {
     });
   };
 
-  const stockColor = (p) => {
-    if (p.stock === 0) return 'var(--danger)';
-    if (p.stock <= p.stockMinimo) return 'var(--warning)';
-    return 'var(--accent3)';
+  const exportCSV = () => {
+    const rows = [['Nombre', 'Categoría', 'Stock', 'Mínimo', 'Precio', 'Estado']];
+    products.forEach(p => rows.push([p.nombre, p.categoria?.nombre || '', p.stock, p.stockMinimo, p.precio || 0, p.activo ? 'Activo' : 'Inactivo']));
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'inventario.csv'; a.click();
   };
 
-  const totals = {
-    total: products.filter(p => p.activo).length,
-    sinStock: products.filter(p => p.activo && p.stock === 0).length,
-    bajo: products.filter(p => p.activo && p.stock > 0 && p.stock <= p.stockMinimo).length,
-  };
+  const active = products.filter(p => p.activo);
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px', position: 'relative', zIndex: 1 }}>
-      <div className="page-header">
+    <div className="page">
+      <div className="ph">
         <div>
-          <h1 className="page-title">Admin — Productos</h1>
-          <p className="page-subtitle">Gestioná el catálogo completo de productos</p>
+          <h1 className="ph-title">Inventario</h1>
+          <p className="ph-sub">{total} productos en total</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setEditing(null); setModalOpen(true); }}>
-          + Nuevo Producto
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, marginBottom: 24 }}>
-        <div className="glass stat-card">
-          <div className="stat-value" style={{ color: 'var(--accent)' }}>{totals.total}</div>
-          <div className="stat-label">Total activos</div>
-        </div>
-        <div className="glass stat-card">
-          <div className="stat-value" style={{ color: 'var(--danger)' }}>{totals.sinStock}</div>
-          <div className="stat-label">Sin stock</div>
-        </div>
-        <div className="glass stat-card">
-          <div className="stat-value" style={{ color: 'var(--warning)' }}>{totals.bajo}</div>
-          <div className="stat-label">Stock bajo</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-glass btn-sm" onClick={exportCSV}>Exportar CSV</button>
+          <button className="btn btn-primary btn-sm" onClick={() => { setEditing(null); setModal(true); }}>+ Nuevo producto</button>
         </div>
       </div>
 
-      <div className="search-bar">
-        <input placeholder="🔍 Buscar..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-        <select value={categoriaFiltro} onChange={e => setCategoriaFiltro(e.target.value)}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 20 }}>
+        {[
+          { n: active.length,                                     l: 'Activos',    c: 'var(--a)' },
+          { n: active.filter(p => p.stock === 0).length,          l: 'Sin stock',  c: 'var(--err)' },
+          { n: active.filter(p => p.stock > 0 && p.stock <= p.stockMinimo).length, l: 'Stock bajo', c: 'var(--warn)' },
+        ].map((s, i) => (
+          <div key={i} className="card stat">
+            <div className="stat-n" style={{ color: s.c }}>{s.n}</div>
+            <div className="stat-l">{s.l}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="sb">
+        <input placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} />
+        <select value={cat} onChange={e => setCat(e.target.value)}>
           <option value="">Todas las categorías</option>
           {categories.map(c => <option key={c._id} value={c._id}>{c.nombre}</option>)}
         </select>
       </div>
 
-      <div className="glass">
-        {loading ? <div className="spinner" /> : products.length === 0 ? (
-          <div className="empty-state"><h3>No hay productos</h3><p>Creá el primero con el botón de arriba</p></div>
+      <div className="card">
+        {loading ? <div className="spin" /> : products.length === 0 ? (
+          <div className="empty"><h3 style={{ color: 'var(--t2)' }}>Sin productos</h3><p>Creá el primero con el botón de arriba</p></div>
         ) : (
-          <div className="table-wrapper">
+          <div className="tbl-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Categoría</th>
-                  <th>Stock</th>
-                  <th>Precio</th>
-                  <th>Último control</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
+                  <th>Nombre</th><th>Categoría</th><th>Stock</th>
+                  <th>Precio</th><th>Último control</th><th>Estado</th><th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {products.map(p => (
                   <tr key={p._id}>
                     <td>
-                      <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{p.nombre}</div>
-                      {p.descripcion && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{p.descripcion.slice(0, 50)}{p.descripcion.length > 50 && '...'}</div>}
+                      <div style={{ fontWeight: 500, color: 'var(--t1)' }}>{p.nombre}</div>
+                      {p.descripcion && <div style={{ fontSize: '0.72rem', color: 'var(--t3)', marginTop: 1 }}>{p.descripcion.slice(0, 48)}{p.descripcion.length > 48 && '…'}</div>}
                     </td>
-                    <td>{p.categoria ? <span className="badge badge-info">{p.categoria.nombre}</span> : <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
-                    <td><span style={{ fontWeight: 700, color: stockColor(p), fontSize: '1.1rem' }}>{p.stock}</span><span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginLeft: 4 }}>/ mín {p.stockMinimo}</span></td>
-                    <td>{p.precio > 0 ? `$${p.precio.toLocaleString()}` : <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
-                    <td style={{ fontSize: '0.82rem' }}>{new Date(p.fechaUltimoControlStock).toLocaleDateString('es-AR')}</td>
-                    <td>{p.activo ? <span className="badge badge-success">Activo</span> : <span className="badge badge-danger">Inactivo</span>}</td>
+                    <td>{p.categoria ? <span className="badge badge-info">{p.categoria.nombre}</span> : <span style={{ color: 'var(--t3)' }}>—</span>}</td>
                     <td>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="btn btn-glass btn-sm btn-icon" title="Editar"
-                          onClick={() => { setEditing(p); setModalOpen(true); }}>✏️</button>
-                        <button className="btn btn-danger btn-sm btn-icon" title="Eliminar"
-                          onClick={() => handleDelete(p._id)}>🗑️</button>
+                      <span style={{ fontWeight: 700, color: stockColor(p), fontVariantNumeric: 'tabular-nums' }}>{p.stock}</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--t3)', marginLeft: 4 }}>/ {p.stockMinimo}</span>
+                    </td>
+                    <td>{p.precio > 0 ? `$${p.precio.toLocaleString('es-AR')}` : <span style={{ color: 'var(--t3)' }}>—</span>}</td>
+                    <td style={{ fontSize: '0.78rem', color: 'var(--t3)' }}>{new Date(p.fechaUltimoControlStock).toLocaleDateString('es-AR')}</td>
+                    <td>{p.activo ? <span className="badge badge-ok">Activo</span> : <span className="badge badge-err">Inactivo</span>}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 5 }}>
+                        <button className="btn btn-glass btn-xs" onClick={() => { setEditing(p); setModal(true); }}>Editar</button>
+                        <button className="btn btn-danger btn-xs" onClick={() => handleDelete(p._id)}>Eliminar</button>
                       </div>
                     </td>
                   </tr>
@@ -229,11 +226,18 @@ export default function AdminProducts() {
         )}
       </div>
 
-      {modalOpen && (
+      {pages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
+          <button className="btn btn-glass btn-sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Anterior</button>
+          <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.82rem', color: 'var(--t3)', padding: '0 4px' }}>{page} / {pages}</span>
+          <button className="btn btn-glass btn-sm" disabled={page === pages} onClick={() => setPage(p => p + 1)}>Siguiente</button>
+        </div>
+      )}
+
+      {modal && (
         <ProductModal
-          product={editing}
-          categories={categories}
-          onClose={() => { setModalOpen(false); setEditing(null); }}
+          product={editing} categories={categories}
+          onClose={() => { setModal(false); setEditing(null); }}
           onSaved={handleSaved}
         />
       )}

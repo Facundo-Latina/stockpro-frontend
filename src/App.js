@@ -10,78 +10,65 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Products from './pages/Products';
+import Dashboard from './pages/Dashboard';
 import AdminProducts from './pages/AdminProducts';
 import AdminUsers from './pages/AdminUsers';
 import AdminCategories from './pages/AdminCategories';
-import NotFound from './pages/NotFound';
 import QuienesSomos from './pages/QuienesSomos';
 import Contacto from './pages/Contacto';
+import NotFound from './pages/NotFound';
 
-const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="spinner" style={{ height: '100vh' }} />;
-  return user ? children : <Navigate to="/login" />;
-};
-
-const AdminRoute = ({ children }) => {
+const Guard = ({ admin, children }) => {
   const { user, loading, isAdmin } = useAuth();
-  if (loading) return <div className="spinner" style={{ height: '100vh' }} />;
-  if (!user) return <Navigate to="/login" />;
-  if (!isAdmin) return <Navigate to="/productos" />;
+  if (loading) return <div className="spin" style={{ minHeight: '100vh' }} />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (admin && !isAdmin) return <Navigate to="/productos" replace />;
   return children;
 };
 
-const AppRoutes = () => {
+function Shell() {
   const { user } = useAuth();
   return (
     <>
       <Navbar />
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={user ? <Navigate to="/productos" /> : <Login />} />
-        <Route path="/registro" element={user ? <Navigate to="/productos" /> : <Register />} />
-        <Route path="/quienes-somos" element={<QuienesSomos />} />
-        <Route path="/contacto" element={<Contacto />} />
+        <Route path="/"                element={<Home />} />
+        <Route path="/login"           element={user ? <Navigate to="/productos" /> : <Login />} />
+        <Route path="/registro"        element={user ? <Navigate to="/productos" /> : <Register />} />
+        <Route path="/quienes-somos"   element={<QuienesSomos />} />
+        <Route path="/contacto"        element={<Contacto />} />
 
-        <Route path="/productos" element={
-          <ProtectedRoute><Products /></ProtectedRoute>
-        } />
-
-        {/* Admin routes */}
-        <Route path="/admin/productos" element={
-          <AdminRoute><AdminProducts /></AdminRoute>
-        } />
-        <Route path="/admin/usuarios" element={
-          <AdminRoute><AdminUsers /></AdminRoute>
-        } />
-        <Route path="/admin/categorias" element={
-          <AdminRoute><AdminCategories /></AdminRoute>
-        } />
+        <Route path="/productos"       element={<Guard><Products /></Guard>} />
+        <Route path="/dashboard"       element={<Guard admin><Dashboard /></Guard>} />
+        <Route path="/admin/productos" element={<Guard admin><AdminProducts /></Guard>} />
+        <Route path="/admin/categorias"element={<Guard admin><AdminCategories /></Guard>} />
+        <Route path="/admin/usuarios"  element={<Guard admin><AdminUsers /></Guard>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
-};
+}
 
-function App() {
+export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <AppRoutes />
+        <Shell />
         <ToastContainer
           position="bottom-right"
           autoClose={3000}
           theme="dark"
           toastStyle={{
-            background: 'rgba(13,18,37,0.95)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            background: 'rgba(12,17,32,0.96)',
+            border: '1px solid rgba(255,255,255,0.08)',
             backdropFilter: 'blur(20px)',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '0.85rem',
+            color: '#f1f5f9',
           }}
         />
       </Router>
     </AuthProvider>
   );
 }
-
-export default App;

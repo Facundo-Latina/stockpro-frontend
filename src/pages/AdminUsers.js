@@ -7,9 +7,9 @@ function EditModal({ user, onClose, onSaved }) {
   const [form, setForm] = useState({ nombre: user.nombre, email: user.email, rol: user.rol });
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handle = async (e) => {
     e.preventDefault();
-    if (!form.nombre.trim() || !form.email.trim()) { toast.error('Nombre y email son requeridos'); return; }
+    if (!form.nombre.trim() || !form.email.trim()) { toast.error('Nombre y email requeridos'); return; }
     setLoading(true);
     try {
       const res = await updateUser(user._id, form);
@@ -17,35 +17,33 @@ function EditModal({ user, onClose, onSaved }) {
       onSaved(res.data.user);
       onClose();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error al actualizar');
+      toast.error(err.response?.data?.message || 'Error');
     } finally { setLoading(false); }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={e => e.stopPropagation()}>
-        <h2>Editar Usuario</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
+    <div className="overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h2>Editar usuario</h2>
+        <form onSubmit={handle}>
+          <div className="field">
             <label>Nombre</label>
             <input type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} />
           </div>
-          <div className="form-group">
+          <div className="field">
             <label>Email</label>
             <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
           </div>
-          <div className="form-group">
+          <div className="field">
             <label>Rol</label>
             <select value={form.rol} onChange={e => setForm({ ...form, rol: e.target.value })}>
               <option value="usuario">Usuario</option>
               <option value="admin">Administrador</option>
             </select>
           </div>
-          <div className="modal-actions">
+          <div className="modal-footer">
             <button type="button" className="btn btn-glass" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Guardando...' : 'Guardar'}
-            </button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Guardando...' : 'Guardar'}</button>
           </div>
         </form>
       </div>
@@ -69,108 +67,90 @@ export default function AdminUsers() {
   const handleToggle = async (u) => {
     try {
       const res = await toggleUser(u._id);
-      setUsers(users.map(x => x._id === u._id ? res.data.user : x));
+      setUsers(prev => prev.map(x => x._id === u._id ? res.data.user : x));
       toast.success(res.data.message);
-    } catch { toast.error('Error al cambiar estado'); }
+    } catch { toast.error('Error'); }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar este usuario definitivamente?')) return;
+    if (!window.confirm('¿Eliminar este usuario?')) return;
     try {
       await deleteUser(id);
-      setUsers(users.filter(u => u._id !== id));
+      setUsers(prev => prev.filter(u => u._id !== id));
       toast.success('Usuario eliminado');
     } catch { toast.error('Error al eliminar'); }
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px', position: 'relative', zIndex: 1 }}>
-      <div className="page-header">
+    <div className="page">
+      <div className="ph">
         <div>
-          <h1 className="page-title">Admin — Usuarios</h1>
-          <p className="page-subtitle">Gestioná las cuentas registradas en el sistema</p>
+          <h1 className="ph-title">Usuarios</h1>
+          <p className="ph-sub">Gestioná las cuentas registradas</p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14, marginBottom: 24 }}>
-        <div className="glass stat-card">
-          <div className="stat-value" style={{ color: 'var(--accent)' }}>{users.length}</div>
-          <div className="stat-label">Total usuarios</div>
-        </div>
-        <div className="glass stat-card">
-          <div className="stat-value" style={{ color: 'var(--accent3)' }}>{users.filter(u => u.activo).length}</div>
-          <div className="stat-label">Activos</div>
-        </div>
-        <div className="glass stat-card">
-          <div className="stat-value" style={{ color: 'var(--danger)' }}>{users.filter(u => !u.activo).length}</div>
-          <div className="stat-label">Suspendidos</div>
-        </div>
-        <div className="glass stat-card">
-          <div className="stat-value" style={{ color: 'var(--accent2)' }}>{users.filter(u => u.rol === 'admin').length}</div>
-          <div className="stat-label">Admins</div>
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 20 }}>
+        {[
+          { n: users.length,                              l: 'Total',       c: 'var(--a)' },
+          { n: users.filter(u => u.activo).length,        l: 'Activos',     c: 'var(--a3)' },
+          { n: users.filter(u => !u.activo).length,       l: 'Suspendidos', c: 'var(--err)' },
+          { n: users.filter(u => u.rol === 'admin').length, l: 'Admins',    c: 'var(--a2)' },
+        ].map((s, i) => (
+          <div key={i} className="card stat">
+            <div className="stat-n" style={{ color: s.c }}>{s.n}</div>
+            <div className="stat-l">{s.l}</div>
+          </div>
+        ))}
       </div>
 
-      <div className="glass">
-        {loading ? <div className="spinner" /> : users.length === 0 ? (
-          <div className="empty-state"><h3>No hay usuarios</h3></div>
+      <div className="card">
+        {loading ? <div className="spin" /> : users.length === 0 ? (
+          <div className="empty"><h3 style={{ color: 'var(--t2)' }}>Sin usuarios</h3></div>
         ) : (
-          <div className="table-wrapper">
+          <div className="tbl-wrap">
             <table>
               <thead>
-                <tr>
-                  <th>Usuario</th>
-                  <th>Email</th>
-                  <th>Rol</th>
-                  <th>Estado</th>
-                  <th>Registrado</th>
-                  <th>Acciones</th>
-                </tr>
+                <tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Estado</th><th>Registrado</th><th>Acciones</th></tr>
               </thead>
               <tbody>
                 {users.map(u => (
                   <tr key={u._id}>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                         <div style={{
-                          width: 32, height: 32, borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #6ee7f7, #a78bfa)',
+                          width: 28, height: 28, borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #5eead4, #818cf8)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '0.8rem', fontWeight: 700, color: '#0a0e1a', flexShrink: 0,
+                          fontSize: '0.72rem', fontWeight: 700, color: '#05101c', flexShrink: 0,
                         }}>
                           {u.nombre?.charAt(0).toUpperCase()}
                         </div>
-                        <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                        <span style={{ fontWeight: 500, color: 'var(--t1)' }}>
                           {u.nombre}
-                          {u._id === me?._id && <span style={{ fontSize: '0.7rem', color: 'var(--accent)', marginLeft: 6 }}>(vos)</span>}
+                          {u._id === me?._id && <span style={{ fontSize: '0.65rem', color: 'var(--a)', marginLeft: 5 }}>(vos)</span>}
                         </span>
                       </div>
                     </td>
-                    <td>{u.email}</td>
+                    <td style={{ color: 'var(--t2)' }}>{u.email}</td>
                     <td>
-                      <span className={u.rol === 'admin' ? 'badge badge-purple' : 'badge badge-info'}>
-                        {u.rol === 'admin' ? '👑 Admin' : '👤 Usuario'}
+                      <span className={u.rol === 'admin' ? 'badge badge-ind' : 'badge badge-info'}>
+                        {u.rol === 'admin' ? 'Admin' : 'Usuario'}
                       </span>
                     </td>
-                    <td>
-                      {u.activo
-                        ? <span className="badge badge-success">Activo</span>
-                        : <span className="badge badge-danger">Suspendido</span>}
-                    </td>
-                    <td style={{ fontSize: '0.82rem' }}>{new Date(u.createdAt).toLocaleDateString('es-AR')}</td>
+                    <td>{u.activo ? <span className="badge badge-ok">Activo</span> : <span className="badge badge-err">Suspendido</span>}</td>
+                    <td style={{ fontSize: '0.78rem', color: 'var(--t3)' }}>{new Date(u.createdAt).toLocaleDateString('es-AR')}</td>
                     <td>
                       {u._id !== me?._id ? (
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <button className="btn btn-glass btn-sm btn-icon" title="Editar" onClick={() => setEditing(u)}>✏️</button>
-                          <button className={`btn btn-sm btn-icon ${u.activo ? 'btn-warning' : 'btn-success'}`}
-                            title={u.activo ? 'Suspender' : 'Activar'}
-                            onClick={() => handleToggle(u)}>
-                            {u.activo ? '🔒' : '🔓'}
+                        <div style={{ display: 'flex', gap: 5 }}>
+                          <button className="btn btn-glass btn-xs" onClick={() => setEditing(u)}>Editar</button>
+                          <button className={`btn btn-xs ${u.activo ? 'btn-warn' : 'btn-ok'}`} onClick={() => handleToggle(u)}>
+                            {u.activo ? 'Suspender' : 'Activar'}
                           </button>
-                          <button className="btn btn-danger btn-sm btn-icon" title="Eliminar" onClick={() => handleDelete(u._id)}>🗑️</button>
+                          <button className="btn btn-danger btn-xs" onClick={() => handleDelete(u._id)}>Eliminar</button>
                         </div>
                       ) : (
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Tu cuenta</span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--t3)' }}>Tu cuenta</span>
                       )}
                     </td>
                   </tr>
@@ -185,7 +165,7 @@ export default function AdminUsers() {
         <EditModal
           user={editing}
           onClose={() => setEditing(null)}
-          onSaved={(updated) => setUsers(users.map(u => u._id === updated._id ? updated : u))}
+          onSaved={updated => setUsers(prev => prev.map(u => u._id === updated._id ? updated : u))}
         />
       )}
     </div>

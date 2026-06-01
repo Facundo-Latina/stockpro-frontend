@@ -3,24 +3,18 @@ import { Link } from 'react-router-dom';
 
 export default function NotFound() {
   return (
-    <div style={{
-      minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 24, position: 'relative', zIndex: 1,
-    }}>
-      <div className="glass" style={{ padding: '60px 48px', textAlign: 'center', maxWidth: 480 }}>
+    <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative', zIndex: 1 }}>
+      <div className="card" style={{ padding: '52px 44px', textAlign: 'center', maxWidth: 420 }}>
         <div style={{
-          fontSize: '6rem', fontWeight: 900, letterSpacing: '-0.05em', lineHeight: 1,
-          background: 'linear-gradient(135deg, #6ee7f7, #a78bfa)',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          marginBottom: 16,
+          fontSize: '5rem', fontWeight: 800, letterSpacing: '-0.06em', lineHeight: 1,
+          background: 'linear-gradient(135deg, #5eead4, #818cf8)',
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 14,
         }}>404</div>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: 12 }}>Página no encontrada</h2>
-        <p style={{ color: 'var(--text-muted)', marginBottom: 32, lineHeight: 1.7 }}>
-          La página que estás buscando no existe o fue movida.
+        <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 8 }}>Página no encontrada</h2>
+        <p style={{ color: 'var(--t3)', marginBottom: 26, fontSize: '0.85rem', lineHeight: 1.65 }}>
+          La página que buscás no existe o fue movida.
         </p>
-        <Link to="/" className="btn btn-primary" style={{ padding: '12px 28px' }}>
-          ← Volver al inicio
-        </Link>
+        <Link to="/" className="btn btn-primary" style={{ padding: '10px 24px', borderRadius: 999 }}>Volver al inicio</Link>
       </div>
     </div>
   );

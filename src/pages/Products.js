@@ -1,54 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { getProducts, getCategories, updateStock } from '../services/api';
+import useDebounce from '../hooks/useDebounce';
 
 function StockModal({ product, onClose, onUpdated }) {
-  const [operacion, setOperacion] = useState('set');
-  const [cantidad, setCantidad] = useState('');
+  const [op, setOp] = useState('set');
+  const [qty, setQty] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handle = async (e) => {
     e.preventDefault();
-    if (!cantidad || isNaN(cantidad) || Number(cantidad) < 0) {
-      toast.error('Ingresá una cantidad válida'); return;
-    }
+    if (qty === '' || isNaN(qty) || Number(qty) < 0) { toast.error('Cantidad inválida'); return; }
     setLoading(true);
     try {
-      const res = await updateStock(product._id, { stock: Number(cantidad), operacion });
+      const res = await updateStock(product._id, { stock: Number(qty), operacion: op });
       toast.success('Stock actualizado');
       onUpdated(res.data.product);
       onClose();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error al actualizar stock');
+      toast.error(err.response?.data?.message || 'Error');
     } finally { setLoading(false); }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={e => e.stopPropagation()}>
-        <h2>Actualizar Stock</h2>
-        <p style={{ color: 'var(--text-muted)', marginBottom: 20, fontSize: '0.9rem' }}>
-          Producto: <strong style={{ color: 'var(--text-primary)' }}>{product.nombre}</strong>
-          &nbsp;— Stock actual: <strong style={{ color: 'var(--accent)' }}>{product.stock}</strong>
+    <div className="overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+        <h2>Actualizar stock</h2>
+        <p style={{ fontSize: '0.82rem', color: 'var(--t3)', marginBottom: 18 }}>
+          {product.nombre} — actual: <strong style={{ color: 'var(--a)' }}>{product.stock}</strong>
         </p>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
+        <form onSubmit={handle}>
+          <div className="field">
             <label>Operación</label>
-            <select value={operacion} onChange={e => setOperacion(e.target.value)}>
-              <option value="set">Establecer valor exacto</option>
-              <option value="add">Agregar al stock actual</option>
-              <option value="subtract">Restar del stock actual</option>
+            <select value={op} onChange={e => setOp(e.target.value)}>
+              <option value="set">Establecer valor</option>
+              <option value="add">Sumar al stock</option>
+              <option value="subtract">Restar del stock</option>
             </select>
           </div>
-          <div className="form-group">
+          <div className="field">
             <label>Cantidad</label>
-            <input type="number" min="0" placeholder="Ej: 10" value={cantidad}
-              onChange={e => setCantidad(e.target.value)} />
+            <input type="number" min="0" placeholder="0" value={qty} onChange={e => setQty(e.target.value)} autoFocus />
           </div>
-          <div className="modal-actions">
+          <div className="modal-footer">
             <button type="button" className="btn btn-glass" onClick={onClose}>Cancelar</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Guardando...' : 'Actualizar'}
+              {loading ? 'Guardando...' : 'Confirmar'}
             </button>
           </div>
         </form>
@@ -57,123 +54,139 @@ function StockModal({ product, onClose, onUpdated }) {
   );
 }
 
+const stockState = (p) => {
+  if (p.stock === 0) return { label: 'Sin stock', cls: 'badge-err', color: 'var(--err)' };
+  if (p.stock <= p.stockMinimo) return { label: 'Stock bajo', cls: 'badge-warn', color: 'var(--warn)' };
+  return { label: 'OK', cls: 'badge-ok', color: 'var(--a3)' };
+};
+
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [busqueda, setBusqueda] = useState('');
-  const [categoriaFiltro, setCategoriaFiltro] = useState('');
+  const [search, setSearch] = useState('');
+  const [cat, setCat] = useState('');
   const [selected, setSelected] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const dSearch = useDebounce(search, 380);
 
-  const fetchProducts = async () => {
-    try {
-      const params = {};
-      if (busqueda) params.busqueda = busqueda;
-      if (categoriaFiltro) params.categoria = categoriaFiltro;
-      const res = await getProducts(params);
-      setProducts(res.data.products);
-    } catch { toast.error('Error al cargar productos'); }
-    finally { setLoading(false); }
-  };
+  const fetchCategories = useCallback(() => {
+    getCategories().then(r => setCategories(r.data.categories)).catch(() => {});
+  }, []);
 
-  useEffect(() => { getCategories().then(r => setCategories(r.data.categories)).catch(() => {}); }, []);
-  useEffect(() => { const t = setTimeout(fetchProducts, 300); return () => clearTimeout(t); }, [busqueda, categoriaFiltro]);
+  const fetchProducts = useCallback(() => {
+    setLoading(true);
+    const params = { page, limit: 16 };
+    if (dSearch) params.busqueda = dSearch;
+    if (cat) params.categoria = cat;
+    getProducts(params)
+      .then(r => { setProducts(r.data.products); setPages(r.data.pages); })
+      .catch(() => toast.error('Error al cargar productos'))
+      .finally(() => setLoading(false));
+  }, [dSearch, cat, page]);
 
-  const stockColor = (p) => {
-    if (p.stock === 0) return 'var(--danger)';
-    if (p.stock <= p.stockMinimo) return 'var(--warning)';
-    return 'var(--accent3)';
-  };
+  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+  useEffect(() => { setPage(1); }, [dSearch, cat]);
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
-  const stockBadge = (p) => {
-    if (p.stock === 0) return <span className="badge badge-danger">Sin stock</span>;
-    if (p.stock <= p.stockMinimo) return <span className="badge badge-warning">Stock bajo</span>;
-    return <span className="badge badge-success">OK</span>;
+  const exportCSV = () => {
+    const rows = [['Nombre', 'Categoría', 'Stock', 'Mínimo', 'Precio']];
+    products.forEach(p => rows.push([
+      p.nombre, p.categoria?.nombre || '', p.stock, p.stockMinimo, p.precio || 0,
+    ]));
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'stockpro-productos.csv'; a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px', position: 'relative', zIndex: 1 }}>
-      <div className="page-header">
+    <div className="page">
+      <div className="ph">
         <div>
-          <h1 className="page-title">Productos</h1>
-          <p className="page-subtitle">Visualizá y actualizá el stock de los productos</p>
+          <h1 className="ph-title">Productos</h1>
+          <p className="ph-sub">Consultá y actualizá el stock de los productos</p>
         </div>
+        <button className="btn btn-glass btn-sm" onClick={exportCSV}>Exportar CSV</button>
       </div>
 
-      <div className="search-bar">
-        <input placeholder="🔍 Buscar producto..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-        <select value={categoriaFiltro} onChange={e => setCategoriaFiltro(e.target.value)}>
+      <div className="sb">
+        <input placeholder="Buscar producto..." value={search} onChange={e => setSearch(e.target.value)} />
+        <select value={cat} onChange={e => setCat(e.target.value)}>
           <option value="">Todas las categorías</option>
           {categories.map(c => <option key={c._id} value={c._id}>{c.nombre}</option>)}
         </select>
       </div>
 
-      {loading ? <div className="spinner" /> : products.length === 0 ? (
-        <div className="empty-state glass" style={{ padding: 60 }}>
-          <h3>No se encontraron productos</h3>
-          <p>Probá con otro filtro o búsqueda</p>
+      {loading ? <div className="spin" /> : products.length === 0 ? (
+        <div className="empty card" style={{ padding: 56 }}>
+          <h3 style={{ color: 'var(--t2)' }}>Sin resultados</h3>
+          <p>Probá con otro filtro</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 18 }}>
-          {products.map(p => (
-            <div key={p._id} className="glass" style={{ padding: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 600, flex: 1 }}>{p.nombre}</h3>
-                {stockBadge(p)}
-              </div>
-
-              {p.descripcion && (
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 14, lineHeight: 1.5 }}>
-                  {p.descripcion}
-                </p>
-              )}
-
-              <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-                {p.categoria && <span className="badge badge-info">{p.categoria.nombre}</span>}
-                {p.precio > 0 && (
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>${p.precio.toLocaleString()}</span>
-                )}
-              </div>
-
-              <div style={{
-                background: 'rgba(255,255,255,0.03)', borderRadius: 10,
-                padding: '14px 16px', marginBottom: 16,
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}>
-                <div>
-                  <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 4 }}>
-                    Stock actual
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: 14 }}>
+            {products.map(p => {
+              const st = stockState(p);
+              return (
+                <div key={p._id} className="card" style={{ padding: '20px 22px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                    <h3 style={{ fontSize: '0.95rem', fontWeight: 600, flex: 1, paddingRight: 8, lineHeight: 1.3 }}>{p.nombre}</h3>
+                    <span className={`badge ${st.cls}`}>{st.label}</span>
                   </div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 700, color: stockColor(p), lineHeight: 1 }}>
-                    {p.stock}
+
+                  {p.descripcion && (
+                    <p style={{ color: 'var(--t3)', fontSize: '0.78rem', marginBottom: 12, lineHeight: 1.5 }}>
+                      {p.descripcion.slice(0, 60)}{p.descripcion.length > 60 && '…'}
+                    </p>
+                  )}
+
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+                    {p.categoria && <span className="badge badge-info">{p.categoria.nombre}</span>}
+                    {p.precio > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--t3)' }}>${p.precio.toLocaleString('es-AR')}</span>}
                   </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: 'rgba(255,255,255,0.025)', borderRadius: 8, padding: '10px 14px', marginBottom: 14 }}>
+                    <div>
+                      <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--t3)', marginBottom: 2 }}>Stock</div>
+                      <div style={{ fontSize: '1.6rem', fontWeight: 700, color: st.color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{p.stock}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--t3)', marginBottom: 2 }}>Mínimo</div>
+                      <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--t2)' }}>{p.stockMinimo}</div>
+                    </div>
+                  </div>
+
+                  <button className="btn btn-glass" style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem' }}
+                    onClick={() => setSelected(p)}>
+                    Actualizar stock
+                  </button>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 4 }}>
-                    Mínimo
-                  </div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{p.stockMinimo}</div>
-                </div>
-              </div>
+              );
+            })}
+          </div>
 
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 14 }}>
-                Último control: {new Date(p.fechaUltimoControlStock).toLocaleDateString('es-AR')}
-              </div>
-
-              <button className="btn btn-glass" style={{ width: '100%', justifyContent: 'center' }}
-                onClick={() => setSelected(p)}>
-                📝 Actualizar Stock
-              </button>
+          {/* Pagination */}
+          {pages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 28 }}>
+              <button className="btn btn-glass btn-sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Anterior</button>
+              <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.82rem', color: 'var(--t3)', padding: '0 4px' }}>
+                {page} / {pages}
+              </span>
+              <button className="btn btn-glass btn-sm" disabled={page === pages} onClick={() => setPage(p => p + 1)}>Siguiente</button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {selected && (
         <StockModal
           product={selected}
           onClose={() => setSelected(null)}
-          onUpdated={(updated) => setProducts(products.map(p => p._id === updated._id ? updated : p))}
+          onUpdated={updated => setProducts(prev => prev.map(p => p._id === updated._id ? updated : p))}
         />
       )}
     </div>

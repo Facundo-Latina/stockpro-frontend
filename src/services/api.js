@@ -49,3 +49,6 @@ export const toggleUser = (id) => API.patch(`/users/${id}/toggle`);
 export const deleteUser = (id) => API.delete(`/users/${id}`);
 
 export default API;
+
+// Stats
+export const getStats = () => API.get('/products/stats');

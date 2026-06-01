@@ -13,84 +13,71 @@ export default function Register() {
 
   const validate = () => {
     const e = {};
-    if (!form.nombre.trim()) e.nombre = 'El nombre es requerido';
-    if (!form.email) e.email = 'El email es requerido';
+    if (!form.nombre.trim()) e.nombre = 'Requerido';
+    if (!form.email) e.email = 'Requerido';
     else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Email inválido';
-    if (!form.password) e.password = 'La contraseña es requerida';
+    if (!form.password) e.password = 'Requerido';
     else if (form.password.length < 6) e.password = 'Mínimo 6 caracteres';
-    if (form.password !== form.confirmar) e.confirmar = 'Las contraseñas no coinciden';
+    if (form.password !== form.confirmar) e.confirmar = 'No coincide';
     return e;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const e2 = validate();
-    if (Object.keys(e2).length) { setErrors(e2); return; }
+  const handle = async (ev) => {
+    ev.preventDefault();
+    const e = validate();
+    if (Object.keys(e).length) { setErrors(e); return; }
     setLoading(true);
     try {
       const res = await register({ nombre: form.nombre, email: form.email, password: form.password });
       loginUser(res.data.token, res.data.user);
-      toast.success('¡Cuenta creada exitosamente!');
+      toast.success('Cuenta creada');
       navigate('/productos');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error al registrarse');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
+  const set = (k) => (ev) => setForm({ ...form, [k]: ev.target.value });
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative', zIndex: 1 }}>
-      <div className="glass" style={{ width: '100%', maxWidth: 440, padding: '40px 36px' }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>✨</div>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: 700, marginBottom: 6 }}>Crear cuenta</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Registrate en StockPro</p>
+    <div style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative', zIndex: 1 }}>
+      <div className="card" style={{ width: '100%', maxWidth: 400, padding: '36px 32px' }}>
+
+        <div style={{ marginBottom: 26 }}>
+          <h1 style={{ fontSize: '1.35rem', fontWeight: 700, letterSpacing: '-0.025em' }}>Crear cuenta</h1>
+          <p style={{ color: 'var(--t3)', fontSize: '0.82rem', marginTop: 4 }}>Registrate en StockPro</p>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Nombre completo</label>
-            <input type="text" placeholder="Tu nombre" value={form.nombre}
-              onChange={e => setForm({ ...form, nombre: e.target.value })}
-              className={errors.nombre ? 'input-error' : ''} />
-            {errors.nombre && <span className="error-msg">{errors.nombre}</span>}
+        <form onSubmit={handle}>
+          <div className="field">
+            <label>Nombre</label>
+            <input type="text" placeholder="Tu nombre" value={form.nombre} onChange={set('nombre')} className={errors.nombre ? 'field-err' : ''} />
+            {errors.nombre && <span className="err-msg">{errors.nombre}</span>}
           </div>
-
-          <div className="form-group">
+          <div className="field">
             <label>Email</label>
-            <input type="email" placeholder="tu@email.com" value={form.email}
-              onChange={e => setForm({ ...form, email: e.target.value })}
-              className={errors.email ? 'input-error' : ''} />
-            {errors.email && <span className="error-msg">{errors.email}</span>}
+            <input type="email" placeholder="tu@email.com" value={form.email} onChange={set('email')} className={errors.email ? 'field-err' : ''} />
+            {errors.email && <span className="err-msg">{errors.email}</span>}
           </div>
-
-          <div className="form-group">
+          <div className="field">
             <label>Contraseña</label>
-            <input type="password" placeholder="Mínimo 6 caracteres" value={form.password}
-              onChange={e => setForm({ ...form, password: e.target.value })}
-              className={errors.password ? 'input-error' : ''} />
-            {errors.password && <span className="error-msg">{errors.password}</span>}
+            <input type="password" placeholder="Mínimo 6 caracteres" value={form.password} onChange={set('password')} className={errors.password ? 'field-err' : ''} />
+            {errors.password && <span className="err-msg">{errors.password}</span>}
           </div>
-
-          <div className="form-group">
-            <label>Confirmar contraseña</label>
-            <input type="password" placeholder="Repetí la contraseña" value={form.confirmar}
-              onChange={e => setForm({ ...form, confirmar: e.target.value })}
-              className={errors.confirmar ? 'input-error' : ''} />
-            {errors.confirmar && <span className="error-msg">{errors.confirmar}</span>}
+          <div className="field">
+            <label>Confirmar</label>
+            <input type="password" placeholder="Repetí la contraseña" value={form.confirmar} onChange={set('confirmar')} className={errors.confirmar ? 'field-err' : ''} />
+            {errors.confirmar && <span className="err-msg">{errors.confirmar}</span>}
           </div>
-
-          <button type="submit" className="btn btn-primary"
-            style={{ width: '100%', justifyContent: 'center', marginTop: 8, padding: 14 }}
-            disabled={loading}>
+          <button type="submit" className="btn btn-primary" disabled={loading}
+            style={{ width: '100%', justifyContent: 'center', marginTop: 6, padding: 11, borderRadius: 999 }}>
             {loading ? 'Creando cuenta...' : 'Registrarse'}
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: 24, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          ¿Ya tenés cuenta?{' '}
-          <Link to="/login" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>Ingresar</Link>
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: '0.82rem', color: 'var(--t3)' }}>
+          Ya tenés cuenta?{' '}
+          <Link to="/login" style={{ color: 'var(--a)', textDecoration: 'none', fontWeight: 500 }}>Ingresar</Link>
         </p>
       </div>
     </div>
